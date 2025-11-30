@@ -1,65 +1,120 @@
+"use client";
+
+import { useState } from "react";
 import Image from "next/image";
+import ExamSetup from "./components/ExamSetup";
+import ExamTaker from "./components/ExamTaker";
+import ExamResults from "./components/ExamResults";
+import { ThemeToggle } from "./components/ThemeToggle";
+import { ExamData, randomizeExam } from "./utils/xmlParser";
+
+type AppState = "SETUP" | "TAKING" | "RESULTS";
 
 export default function Home() {
+  const [appState, setAppState] = useState<AppState>("SETUP");
+  const [examData, setExamData] = useState<ExamData | null>(null);
+  const [userAnswers, setUserAnswers] = useState<Record<string, string>>({});
+  const [passingScore, setPassingScore] = useState(0);
+
+  const handleStartExam = (data: ExamData, config: { passingScore: number; maxQuestions: number }) => {
+    const randomized = randomizeExam(data, config.maxQuestions);
+    setExamData(randomized);
+    setPassingScore(config.passingScore);
+    setAppState("TAKING");
+    setUserAnswers({});
+  };
+
+  const handleFinishExam = (answers: Record<string, string>) => {
+    setUserAnswers(answers);
+    setAppState("RESULTS");
+  };
+
+  const handleRetry = () => {
+    setAppState("SETUP");
+    setExamData(null);
+    setUserAnswers({});
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
+    <main className="min-h-screen bg-zinc-50 dark:bg-black text-zinc-900 dark:text-zinc-100 transition-colors duration-300">
+      <div className="container mx-auto px-4 py-8 md:py-16">
+        <header className="mb-12 print:hidden relative">
+          {/* Logo - Top left on desktop, centered on mobile */}
+          <div className="absolute left-0 top-0 hidden md:block">
             <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+              href="https://www.linkedin.com/in/kevinceresc"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block hover:opacity-80 transition-opacity"
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+              <Image
+                src="https://res.cloudinary.com/dpsygq9p6/image/upload/v1696988507/Botines/kevinceronlogo.png"
+                alt="Logo Kevin Ceron"
+                width={120}
+                height={120}
+                className="object-contain"
+                priority
+              />
+            </a>
+          </div>
+
+          {/* Theme Toggle - Top right */}
+          <div className="absolute right-0 top-0">
+            <ThemeToggle />
+          </div>
+
+          {/* Centered content */}
+          <div className="flex flex-col items-center justify-center">
+            {/* Logo centered on mobile only */}
+            <div className="mb-6 md:hidden">
+              <a
+                href="https://www.linkedin.com/in/kevinceresc"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block hover:opacity-80 transition-opacity"
+              >
+                <Image
+                  src="https://res.cloudinary.com/dpsygq9p6/image/upload/v1696988507/Botines/kevinceronlogo.png"
+                  alt="Logo Kevin Ceron"
+                  width={150}
+                  height={150}
+                  className="object-contain"
+                  priority
+                />
+              </a>
+            </div>
+
+            <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-4 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              Generador de Exámenes
+            </h1>
+            <p className="text-lg text-zinc-600 dark:text-zinc-400 text-center">
+              Crea, practica y evalúa tus conocimientos.
+            </p>
+          </div>
+        </header>
+
+        <div className="transition-all duration-500 ease-in-out">
+          {appState === "SETUP" && (
+            <ExamSetup onStartExam={handleStartExam} />
+          )}
+
+          {appState === "TAKING" && examData && (
+            <ExamTaker
+              examData={examData}
+              onFinish={handleFinishExam}
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+          )}
+
+          {appState === "RESULTS" && examData && (
+            <ExamResults
+              examData={examData}
+              answers={userAnswers}
+              passingScore={passingScore}
+              onRetry={handleRetry}
+            />
+          )}
         </div>
-      </main>
-    </div>
+      </div>
+    </main>
   );
 }
